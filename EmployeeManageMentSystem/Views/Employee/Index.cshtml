@@ -1,0 +1,82 @@
+@model IEnumerable<Employee>
+@{
+    ViewData["Title"] = "Employees";
+    var departments = ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>();
+    var projects = ViewBag.Projects as IEnumerable<Project> ?? Enumerable.Empty<Project>();
+    var selectedDepartmentId = ViewBag.DepartmentId is int departmentId ? departmentId : 0;
+    var selectedProjectId = ViewBag.ProjectId is int projectId ? projectId : 0;
+    var selectedStatus = ViewBag.IsActive is bool isActive ? isActive : false;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Employees</h1>
+    <a class="btn btn-primary" asp-action="Create">Add employee</a>
+</div>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Search</label>
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Name or email" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Department</label>
+        <select class="form-select" name="departmentId">
+            <option value="">All departments</option>
+            @foreach (var department in departments)
+            {
+                <option value="@department.Id" selected="@(selectedDepartmentId == department.Id)">@department.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="isActive">
+            <option value="">All</option>
+            <option value="true" selected="@(selectedStatus)">Active</option>
+            <option value="false" selected="@(!selectedStatus && ViewBag.IsActive != null)">Inactive</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Project</label>
+        <select class="form-select" name="projectId">
+            <option value="">All projects</option>
+            @foreach (var project in projects)
+            {
+                <option value="@project.Id" selected="@(selectedProjectId == project.Id)">@project.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-1 d-grid">
+        <button type="submit" class="btn btn-outline-primary">Filter</button>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Employee ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Salary</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Projects</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var employee in Model)
+        {
+            <tr>
+                <td>@employee.Id</td>
+                <td>@employee.FullName</td>
+                <td>@employee.Email</td>
+                <td>@employee.Salary.ToString("C")</td>
+                <td>@employee.Department?.Name</td>
+                <td>@(employee.IsActive ? "Active" : "Inactive")</td>
+                <td>@string.Join(", ", employee.Projects.Select(project => project.Name))</td>
+                <td class="text-end"><a asp-action="Edit" asp-route-id="@employee.Id">Edit</a> | <a asp-action="Delete"
+                                                                                                        asp-route-id="@employee.Id">Delete</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>

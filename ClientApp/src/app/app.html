@@ -1,0 +1,272 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#" (click)="changeView('dashboard'); $event.preventDefault()">
+      <span class="brand-mark"><i class="bi bi-layers-half"></i></span>
+      <span class="brand-copy">People<span>OS</span><small>TEAM WORKSPACE</small></span>
+    </a>
+
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="side-nav" aria-label="Main navigation">
+      <button [class.active]="view() === 'dashboard'" (click)="changeView('dashboard')">
+        <i class="bi bi-grid-1x2"></i><span>Overview</span>
+      </button>
+      <button [class.active]="view() === 'employees'" (click)="changeView('employees')">
+        <i class="bi bi-people"></i><span>People</span><span class="nav-count">{{ employees().length }}</span>
+      </button>
+      <button [class.active]="view() === 'departments'" (click)="changeView('departments')">
+        <i class="bi bi-diagram-3"></i><span>Departments</span>
+      </button>
+      <button [class.active]="view() === 'projects'" (click)="changeView('projects')">
+        <i class="bi bi-kanban"></i><span>Projects</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+    <div class="profile">
+      <div class="profile-avatar">PM</div>
+      <div class="profile-copy"><strong>People Manager</strong><span>Workspace admin</span></div>
+      <i class="bi bi-three-dots"></i>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div class="breadcrumb"><span>Workspace</span><i class="bi bi-chevron-right"></i><strong>{{ pageTitle }}</strong></div>
+      <div class="topbar-actions">
+        <span class="today"><i class="bi bi-calendar3"></i> {{ today | date:'EEE, MMM d' }}</span>
+        <button class="icon-button" title="Refresh workspace" aria-label="Refresh workspace" (click)="loadAll()">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button class="top-avatar" title="People Manager">PM</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      @if (error()) {
+        <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
+          <i class="bi bi-exclamation-circle"></i><span>{{ error() }}</span>
+          <button type="button" class="btn-close ms-auto" aria-label="Dismiss" (click)="error.set('')"></button>
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="loading-state"><span class="spinner-border spinner-border-sm"></span> Loading your workspace…</div>
+      } @else if (view() === 'dashboard') {
+        <section class="welcome-row">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span> YOUR TEAM, AT A GLANCE</div>
+            <h1>Good {{ greeting }}, team</h1>
+            <p>Here’s what’s happening across your workspace today.</p>
+          </div>
+          <button class="btn btn-primary primary-action" (click)="openCreate('employee')">
+            <i class="bi bi-plus-lg"></i> Add a teammate
+          </button>
+        </section>
+
+        @if (dashboard(); as data) {
+          <section class="stats-grid" aria-label="Workspace statistics">
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon violet"><i class="bi bi-people"></i></span><span class="stat-caption">TEAM SIZE</span></div>
+              <div class="stat-value">{{ data.totalEmployees }}<span class="stat-unit"> people</span></div>
+              <div class="stat-foot"><span class="status-dot"></span>{{ data.activeEmployees }} active today</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon blue"><i class="bi bi-diagram-3"></i></span><span class="stat-caption">DEPARTMENTS</span></div>
+              <div class="stat-value">{{ data.totalDepartments }}</div>
+              <div class="stat-foot">Across your organization</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon amber"><i class="bi bi-kanban"></i></span><span class="stat-caption">ACTIVE PROJECTS</span></div>
+              <div class="stat-value">{{ data.activeProjects }}<span class="stat-unit"> / {{ data.totalProjects }}</span></div>
+              <div class="stat-foot">Projects in progress</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon mint"><i class="bi bi-wallet2"></i></span><span class="stat-caption">TEAM PAYROLL</span></div>
+              <div class="stat-value payroll">{{ data.totalAnnualPayroll | currency:'USD':'symbol':'1.0-0' }}</div>
+              <div class="stat-foot">Active annual salaries</div>
+            </article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="surface department-panel">
+              <div class="panel-heading">
+                <div><h2>Team distribution</h2><p>People across each department</p></div>
+                <button class="text-action" (click)="changeView('departments')">View all <i class="bi bi-arrow-up-right"></i></button>
+              </div>
+              @if (data.departmentDistribution.length) {
+                <div class="distribution-list">
+                  @for (department of data.departmentDistribution; track department.id) {
+                    <div class="distribution-row">
+                      <div class="distribution-label"><span>{{ department.name }}</span><strong>{{ department.employeeCount }}</strong></div>
+                      <div class="progress-track"><span [style.width.%]="departmentShare(department.employeeCount)"></span></div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-inline"><i class="bi bi-diagram-3"></i><span>No departments yet. Create one to organize your people.</span></div>
+              }
+              <div class="panel-footer">
+                <span><i class="bi bi-info-circle"></i> Team allocation</span>
+                <button class="mini-link" (click)="openCreate('department')"><i class="bi bi-plus"></i> New department</button>
+              </div>
+            </article>
+
+            <article class="surface project-panel">
+              <div class="panel-heading">
+                <div><h2>Project pulse</h2><p>A quick look at current work</p></div>
+                <button class="text-action" (click)="changeView('projects')">All projects <i class="bi bi-arrow-up-right"></i></button>
+              </div>
+              <div class="project-summary">
+                <div class="project-total"><strong>{{ data.totalProjects }}</strong><span>Total projects</span></div>
+                <div class="project-status-list">
+                  <div><span class="project-dot active-dot"></span><span>Active</span><strong>{{ data.projectsByStatus['Active'] || 0 }}</strong></div>
+                  <div><span class="project-dot planned-dot"></span><span>Planned</span><strong>{{ data.projectsByStatus['Planned'] || 0 }}</strong></div>
+                  <div><span class="project-dot complete-dot"></span><span>Completed</span><strong>{{ data.projectsByStatus['Completed'] || 0 }}</strong></div>
+                </div>
+              </div>
+              <div class="panel-footer">
+                <span><i class="bi bi-lightning-charge"></i> Keep momentum going</span>
+                <button class="mini-link" (click)="openCreate('project')"><i class="bi bi-plus"></i> New project</button>
+              </div>
+            </article>
+          </section>
+
+          <section class="surface recent-panel">
+            <div class="panel-heading">
+              <div><h2>Recent teammates</h2><p>Your newest people in the workspace</p></div>
+              <button class="text-action" (click)="changeView('employees')">View directory <i class="bi bi-arrow-up-right"></i></button>
+            </div>
+            @if (data.recentEmployees.length) {
+              <div class="recent-list">
+                @for (employee of data.recentEmployees; track employee.id) {
+                  <div class="recent-person">
+                    <div class="person-avatar" [class]="avatarClass(employee.id)">{{ initials(employee.fullName) }}</div>
+                    <div class="person-details"><strong>{{ employee.fullName }}</strong><span>{{ employee.email }}</span></div>
+                    <span class="department-pill">{{ employee.departmentName }}</span>
+                    <span class="person-status" [class.inactive]="!employee.isActive"><i></i>{{ employee.isActive ? 'Active' : 'Inactive' }}</span>
+                    <button class="row-arrow" aria-label="Edit teammate" (click)="openEmployee(employee)"><i class="bi bi-arrow-up-right"></i></button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline"><i class="bi bi-person-plus"></i><span>Your team starts here. Add your first teammate to get going.</span></div>
+            }
+          </section>
+        }
+      } @else if (view() === 'employees') {
+        <section class="welcome-row directory-heading">
+          <div><div class="eyebrow"><span class="eyebrow-dot"></span> YOUR PEOPLE</div><h1>Meet the team</h1><p>Everyone who makes the work happen, all in one place.</p></div>
+          <button class="btn btn-primary primary-action" (click)="openCreate('employee')"><i class="bi bi-plus-lg"></i> Add a teammate</button>
+        </section>
+        <section class="surface directory-panel">
+          <div class="directory-toolbar">
+            <div><h2>People directory <span class="count-pill">{{ filteredEmployees.length }}</span></h2><p>Manage your team and their workspace details.</p></div>
+            <label class="search-box"><i class="bi bi-search"></i><input aria-label="Search people" placeholder="Search people…" [ngModel]="search()" (ngModelChange)="search.set($event)"><kbd>⌘ K</kbd></label>
+          </div>
+          <div class="table-responsive">
+            <table class="table people-table align-middle">
+              <thead><tr><th>TEAMMATE</th><th>DEPARTMENT</th><th>PROJECTS</th><th>ANNUAL SALARY</th><th>STATUS</th><th></th></tr></thead>
+              <tbody>
+                @for (employee of filteredEmployees; track employee.id) {
+                  <tr>
+                    <td><div class="table-person"><div class="person-avatar" [class]="avatarClass(employee.id)">{{ initials(employee.fullName) }}</div><div class="person-details"><strong>{{ employee.fullName }}</strong><span>{{ employee.email }}</span></div></div></td>
+                    <td><span class="department-pill">{{ employee.departmentName }}</span></td>
+                    <td><span class="project-count"><i class="bi bi-kanban"></i>{{ employee.projects.length }} projects</span></td>
+                    <td class="salary-cell">{{ employee.salary | currency:'USD':'symbol':'1.0-0' }}</td>
+                    <td><span class="person-status" [class.inactive]="!employee.isActive"><i></i>{{ employee.isActive ? 'Active' : 'Inactive' }}</span></td>
+                    <td><div class="row-actions"><button title="Edit teammate" (click)="openEmployee(employee)"><i class="bi bi-pencil"></i></button><button title="Remove teammate" (click)="askDelete('employee', employee.id, employee.fullName)"><i class="bi bi-trash3"></i></button></div></td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="6"><div class="table-empty"><i class="bi bi-person-lines-fill"></i><strong>No teammates found</strong><span>Try a different search or add someone new.</span></div></td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      } @else if (view() === 'departments') {
+        <section class="welcome-row directory-heading">
+          <div><div class="eyebrow"><span class="eyebrow-dot"></span> HOW YOU’RE ORGANIZED</div><h1>Departments</h1><p>Build the teams that help your people do their best work.</p></div>
+          <button class="btn btn-primary primary-action" (click)="openCreate('department')"><i class="bi bi-plus-lg"></i> Add department</button>
+        </section>
+        <section class="department-cards">
+          @for (department of departments(); track department.id; let i = $index) {
+            <article class="surface department-card">
+              <div class="department-card-top"><span class="department-icon" [class]="departmentClass(i)"><i class="bi bi-diagram-3"></i></span><div class="row-actions"><button title="Edit department" (click)="openDepartment(department)"><i class="bi bi-pencil"></i></button><button title="Delete department" (click)="askDelete('department', department.id, department.name)"><i class="bi bi-trash3"></i></button></div></div>
+              <h2>{{ department.name }}</h2><p>Department team</p>
+              <div class="department-card-stats"><div><strong>{{ department.employeeCount }}</strong><span>People</span></div><div><strong>{{ department.depBudget | currency:'USD':'symbol':'1.0-0' }}</strong><span>Annual budget</span></div></div>
+              <div class="card-bottom"><span><span class="status-dot"></span> {{ department.employeeCount ? 'Team established' : 'Ready to grow' }}</span><i class="bi bi-arrow-up-right"></i></div>
+            </article>
+          } @empty {
+            <div class="surface empty-card"><div class="empty-illustration"><i class="bi bi-diagram-3"></i></div><h2>No departments yet</h2><p>Create your first department to bring your people together.</p><button class="btn btn-primary primary-action" (click)="openCreate('department')"><i class="bi bi-plus-lg"></i> Create department</button></div>
+          }
+        </section>
+      } @else {
+        <section class="welcome-row directory-heading">
+          <div><div class="eyebrow"><span class="eyebrow-dot"></span> THE WORK IN MOTION</div><h1>Projects</h1><p>See what your people are building together.</p></div>
+          <button class="btn btn-primary primary-action" (click)="openCreate('project')"><i class="bi bi-plus-lg"></i> Add project</button>
+        </section>
+        <section class="project-cards">
+          @for (project of projects(); track project.id; let i = $index) {
+            <article class="surface project-card">
+              <div class="project-card-top"><span class="project-icon" [class]="projectClass(i)"><i class="bi bi-kanban"></i></span><div class="row-actions"><button title="Edit project" (click)="openProject(project)"><i class="bi bi-pencil"></i></button><button title="Delete project" (click)="askDelete('project', project.id, project.name)"><i class="bi bi-trash3"></i></button></div></div>
+              <div class="project-badge" [class]="statusClass(project.status)"><span></span>{{ statusLabel(project.status) }}</div>
+              <h2>{{ project.name }}</h2><p>{{ project.startDate | date:'MMM d, y' }} – {{ project.endDate | date:'MMM d, y' }}</p>
+              <div class="project-card-bottom"><span><i class="bi bi-people"></i>{{ project.employeeCount }} team members</span><span class="project-open"><i class="bi bi-arrow-up-right"></i></span></div>
+            </article>
+          } @empty {
+            <div class="surface empty-card"><div class="empty-illustration project-empty"><i class="bi bi-kanban"></i></div><h2>Nothing on the board yet</h2><p>Create a project and bring the right people together.</p><button class="btn btn-primary primary-action" (click)="openCreate('project')"><i class="bi bi-plus-lg"></i> Create project</button></div>
+          }
+        </section>
+      }
+    </div>
+  </main>
+</div>
+
+@if (editor(); as form) {
+  <div class="modal-backdrop-custom" (click)="editor.set(null)">
+    <section class="editor-modal" role="dialog" aria-modal="true" [attr.aria-label]="(form.id ? 'Edit ' : 'Add ') + label(form.kind)" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><div><span class="modal-kicker">{{ form.id ? 'UPDATE WORKSPACE' : 'GROW YOUR WORKSPACE' }}</span><h2>{{ form.id ? 'Edit ' : 'Add ' }}{{ label(form.kind) }}</h2><p>{{ form.id ? 'Keep your team information up to date.' : 'Add a few details to get started.' }}</p></div><button class="modal-close" aria-label="Close dialog" (click)="editor.set(null)"><i class="bi bi-x-lg"></i></button></div>
+      <form (ngSubmit)="save()">
+        @if (form.kind === 'employee') {
+          <div class="form-grid">
+            <label class="field full"><span>Full name</span><input name="name" [(ngModel)]="form.name" required maxlength="100" placeholder="e.g. Alex Morgan"></label>
+            <label class="field full"><span>Work email</span><input type="email" name="email" [(ngModel)]="form.email" required maxlength="255" placeholder="alex@company.com"></label>
+            <label class="field"><span>Annual salary</span><div class="input-prefix"><span>$</span><input type="number" name="salary" [(ngModel)]="form.salary" required min="1" step="1000" placeholder="65000"></div></label>
+            <label class="field"><span>Department</span><select name="departmentId" [(ngModel)]="form.departmentId" required><option [ngValue]="0" disabled>Select department</option>@for (department of departments(); track department.id) {<option [ngValue]="department.id">{{ department.name }}</option>}</select></label>
+            <label class="check-field full"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive"><span><strong>Active teammate</strong><small>Include this person in active team totals.</small></span></label>
+          </div>
+        } @else if (form.kind === 'department') {
+          <div class="form-grid">
+            <label class="field full"><span>Department name</span><input name="name" [(ngModel)]="form.name" required maxlength="100" placeholder="e.g. Product & Design"></label>
+            <label class="field full"><span>Annual budget</span><div class="input-prefix"><span>$</span><input type="number" name="budget" [(ngModel)]="form.budget" required min="0" step="1000" placeholder="250000"></div></label>
+          </div>
+        } @else {
+          <div class="form-grid">
+            <label class="field full"><span>Project name</span><input name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Website refresh"></label>
+            <label class="field"><span>Start date</span><input type="date" name="startDate" [(ngModel)]="form.startDate" required></label>
+            <label class="field"><span>Target date</span><input type="date" name="endDate" [(ngModel)]="form.endDate" required></label>
+            <label class="field full"><span>Status</span><select name="status" [(ngModel)]="form.status"><option>Planned</option><option>Active</option><option>Completed</option><option value="OnHold">On hold</option></select></label>
+            <label class="field full"><span>Project team <small class="field-hint">Hold Ctrl (or ⌘) to select several people.</small></span><select name="employeeIds" [(ngModel)]="form.employeeIds" multiple class="team-select">@for (employee of employeeOptions(); track employee.id) {<option [ngValue]="employee.id">{{ employee.fullName }}</option>}</select></label>
+          </div>
+        }
+        @if (error()) { <div class="form-error"><i class="bi bi-exclamation-circle"></i>{{ error() }}</div> }
+        <div class="modal-actions"><button type="button" class="btn btn-light cancel-button" (click)="editor.set(null)">Cancel</button><button type="submit" class="btn btn-primary primary-action" [disabled]="saving()"><i class="bi" [class.bi-check-lg]="!saving()" [class.bi-arrow-repeat]="saving()"></i>{{ saving() ? 'Saving…' : (form.id ? 'Save changes' : 'Create ' + label(form.kind).toLowerCase()) }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (confirmDelete(); as target) {
+  <div class="modal-backdrop-custom" (click)="confirmDelete.set(null)">
+    <section class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" (click)="$event.stopPropagation()">
+      <div class="delete-icon"><i class="bi bi-trash3"></i></div><h2 id="delete-title">Remove {{ label(target.kind).toLowerCase() }}?</h2>
+      <p><strong>{{ target.name }}</strong> will be permanently removed from your workspace. This action can’t be undone.</p>
+      @if (error()) { <div class="form-error"><i class="bi bi-exclamation-circle"></i>{{ error() }}</div> }
+      <div class="modal-actions"><button class="btn btn-light cancel-button" (click)="confirmDelete.set(null)">Keep it</button><button class="btn btn-danger delete-button" (click)="remove()"><i class="bi bi-trash3"></i> Remove</button></div>
+    </section>
+  </div>
+}
+
+@if (toast()) {
+  <div class="toast-message" role="status"><i class="bi bi-check-circle-fill"></i>{{ toast() }}<button aria-label="Dismiss notification" (click)="dismissToast()"><i class="bi bi-x"></i></button></div>
+}

@@ -1,0 +1,26 @@
+@model EmployeeManageMentSystem.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h1 class="h3 mb-0">Something went wrong</h1>
+        <p>Please contact Admintsrator</p>
+    </div>
+    <div class="card-body">
+        @if (Model.StatusCode.HasValue)
+        {
+            <p class="fw-bold">Status code: @Model.StatusCode</p>
+        }
+
+        <p>@Model.Message</p>
+
+        @if (Model.ShowRequestId)
+        {
+            <p class="text-muted">Request ID: @Model.RequestId</p>
+        }
+
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Back</a>
+    </div>
+</div>
