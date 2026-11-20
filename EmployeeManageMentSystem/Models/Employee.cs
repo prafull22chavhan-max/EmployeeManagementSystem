@@ -4,9 +4,6 @@ namespace EmployeeManageMentSystem.Models;
 
 
 
-// first line ......`
-
-
 public class Employee
 {
     public int Id { get; set; }
